@@ -187,7 +187,8 @@ kubectl get secrets -n sno01 pullsecret-cluster-sno01 -o yaml
 
 You may compare the decoded secret data to the secret you created earlier; both should match.
 
-### References:
+## References:
 
 [Vault Documentation](https://www.vaultproject.io/docs/platform/k8s/helm/run)
+
 [Balkrishna Pandey](https://www.goglides.dev/bkpandey/how-to-manage-secrets-in-openshiftkubernetes-using-vault-and-external-secrets-1n6k)
