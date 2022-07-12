@@ -75,7 +75,7 @@ kubectl get pods -n "external-secrets"
 Create a file `cluster-secret-store.yaml` with following content.
 
 ```yaml
-apiVersion: external-secrets.io/v1alpha1
+apiVersion: external-secrets.io/v1beta1
 kind: ClusterSecretStore
 metadata:
   name: vault-backend
@@ -127,7 +127,7 @@ kubectl apply -f vault-token-secret.yaml
 Create a file `external-pullsecret-cluster.yaml` with following content.
 
 ```yaml
-apiVersion: external-secrets.io/v1alpha1
+apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
   name: pullsecret-cluster-sno01
@@ -142,7 +142,7 @@ spec:
   data:
   - secretKey: .dockerconfigjson
     remoteRef:
-      key: secret/openshiftpullsecret
+      key: secret/kubernetespullsecret
       property: dockerconfigjson
 ```
 
@@ -156,7 +156,7 @@ kubectl exec -it vault-0 -- vault secrets enable -path=secret/ kv
 Now add data
 
 ```shell
-oc exec -it vault-0 -- vault kv put secret/pullsecret dockerconfigjson='{"auths":{"cloud.openshift.com":{"auth":"3BlbnNoaWZ0LXJl==","email":"example@redhat.com"},"quay.io":{"auth":"ZZMVhJRUJUR1I3WUwxN05VMQ==","email":"example@redhat.com"},"registry.connect.redhat.com":{"auth":"3BlbnNoaWZ0LXJl==","email":"example@redhat.com"},"registry.redhat.io":{"auth":"==","email":"example@redhat.com"}}}'
+kubectl exec -it vault-0 -- vault kv put secret/pullsecret dockerconfigjson='{"auths":{"cloud.openshift.com":{"auth":"3BlbnNoaWZ0LXJl==","email":"example@redhat.com"},"quay.io":{"auth":"ZZMVhJRUJUR1I3WUwxN05VMQ==","email":"example@redhat.com"},"registry.connect.redhat.com":{"auth":"3BlbnNoaWZ0LXJl==","email":"example@redhat.com"},"registry.redhat.io":{"auth":"==","email":"example@redhat.com"}}}'
 ```
 
 Now apply the `ExternalSecret` object created above.
