@@ -146,6 +146,12 @@ spec:
       property: dockerconfigjson
 ```
 
+Create namespace
+
+```shell
+kubectl create namespace sno01
+```
+
 Enable the kv endpoint as follows
 
 ```shell
