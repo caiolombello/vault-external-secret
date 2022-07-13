@@ -1,5 +1,7 @@
 # Vault and External Secrets with Kubernetes
 
+![HCP Vault](https://external-secrets.io/v0.5.1/pictures/diagrams-provider-vault.png)
+
 ## How-To
 
 ### Install Vault with Helm
@@ -54,6 +56,56 @@ Login as root
 
 ```shell
 kubectl exec -ti vault-0 -- vault login
+```
+
+### Enable Kubernetes Auth
+
+```shell
+kubectl exec -it vault-0 -- vault auth enable kubernetes
+```
+
+Configure the Authentication
+
+```shell
+# env
+export KUBERNETES_PORT_443_TCP_ADDR=10.43.0.1 # found with `kubectl get svc`
+export SERVICE_ACCOUNT_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+export PATH_TO_CERTIFICATE=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+```
+
+```shell
+kubectl exec -it vault-0 -- vault write auth/kubernetes/config \
+  kubernetes_host=\
+  "https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
+    token_reviewer_jwt=$SERVICE_ACCOUNT_TOKEN \
+    kubernetes_ca_cert=@$PATH_TO_CERTIFICATE
+```
+
+Create a role
+
+```shell
+kubectl exet -it vault-0 -- vault write auth/kubernetes/role/internal-app \
+  policies=internal-app \
+  bound_service_account_namespaces=default \
+  bound_service_account_names=k8s-service-acct \
+  ttl=24h
+```
+
+Create a Vault Policy
+
+```shell
+kubectl exec -it vault-0 -- vault policy write internal-app - <<EOF
+path "internal/data/database/config" {
+  capabilities = ["read"]
+}
+EOF
+```
+
+Create Kubernetes Service Accounts
+
+```shell
+kubectl create sa k8s-service-acct \
+  --namespace default
 ```
 
 ### Install External Secret Operator with Helm
