@@ -83,7 +83,7 @@ kubectl exec -it vault-0 -- vault write auth/kubernetes/config \
 Create a role
 
 ```shell
-kubectl exet -it vault-0 -- vault write auth/kubernetes/role/internal-app \
+kubectl exec -it vault-0 -- vault write auth/kubernetes/role/internal-app \
   policies=internal-app \
   bound_service_account_namespaces=default \
   bound_service_account_names=k8s-service-acct \
