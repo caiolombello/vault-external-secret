@@ -70,13 +70,12 @@ Configure the Authentication
 # env
 export KUBERNETES_PORT_443_TCP_ADDR=10.43.0.1 # found with `kubectl get svc`
 export SERVICE_ACCOUNT_TOKEN=$(kubectl exec -it vault-0 -- cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-export PATH_TO_CERTIFICATE=$(kubectl exec -it vault-0 -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
+export PATH_TO_CERTIFICATE=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 ```
 
 ```shell
 kubectl exec -it vault-0 -- vault write auth/kubernetes/config \
-  kubernetes_host=\
-  "https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
+  kubernetes_host=$KUBERNETES_PORT_443_TCP_ADDR \
     token_reviewer_jwt=$SERVICE_ACCOUNT_TOKEN \
     kubernetes_ca_cert=@$PATH_TO_CERTIFICATE
 ```
