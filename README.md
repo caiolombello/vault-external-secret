@@ -77,7 +77,8 @@ export PATH_TO_CERTIFICATE=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 kubectl exec -it vault-0 -- vault write auth/kubernetes/config \
   kubernetes_host=$KUBERNETES_PORT_443_TCP_ADDR \
     token_reviewer_jwt=$SERVICE_ACCOUNT_TOKEN \
-    kubernetes_ca_cert=@$PATH_TO_CERTIFICATE
+    kubernetes_ca_cert=@$PATH_TO_CERTIFICATE \
+    disable_issuer_verification=true
 ```
 
 Create a role
@@ -133,46 +134,50 @@ metadata:
 spec:
   provider:
     vault:
-      server: "http://vault-server-internal.vault:8200"
+      server: "http://10.43.129.3:8200" # Pegue o IP do servidor através do comando `kubectl get svc`
       path: "secret"
-      version: "v1"
+      version: "v2"
       auth:
-        tokenSecretRef:
-          name: "vault-token"
-          key: "token"
-          namespace: vault
+        kubernetes:
+          mountPath: "kubernetes"
+          role: "internal-app"
+          serviceAccountRef:
+            name: "k8s-service-acct"
+          secretRef:
+            name: "kubernetes-jwt"
+            key: "jwt"
+            namespace: "kubernetes-jwt"
 ```
 
-Create a file `vault-token-secret.yaml` with the following content, ensure `token: cy50cU4xVXFHUEpqdFpLeklMaW11VjdQZlg=` matches with your vault cluster root token.
-
-To encode your vault cluster root token use:
+Encode JWT as Base64
 
 ```shell
-echo -n $VAULT_TOKEN |base64
+echo -n $SERVICE_ACCOUNT_TOKEN |base64
 ```
 
+Create a file `jwt-secret.yaml` with the following content
+
 ```yaml
----
 apiVersion: v1
 kind: Secret
 metadata:
-  name: vault-token
-  namespace: vault
+  name: kubernetes-jwt
+  namespace: kubernetes-jwt
 data:
-  token: cy50cU4xVXFHUEpqdFpLeklMaW11VjdQZlg=
+  jwt: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNklsUmZVa1pVVUV4VUxYUnRhRkJOV2pobFREWlNWMVl6YkVORVNWY3RhbXd6V210R1FuYzNNVFZuY1VVaWZRLmV5SmhkV1FpT2xzaWFIUjBjSE02THk5cmRXSmxjbTVsZEdWekxtUmxabUYxYkhRdWMzWmpMbU5zZFhOMFpYSXViRzlqWVd3aUxDSnJNM01pWFN3aVpYaHdJam94TmpnNU1qVTRORE0yTENKcFlYUWlPakUyTlRjM01qSTBNellzSW1semN5STZJbWgwZEhCek9pOHZhM1ZpWlhKdVpYUmxjeTVrWldaaGRXeDBMbk4yWXk1amJIVnpkR1Z5TG14dlkyRnNJaXdpYTNWaVpYSnVaWFJsY3k1cGJ5STZleUp1WVcxbGMzQmhZMlVpT2lKa1pXWmhkV3gwSWl3aWNHOWtJanA3SW01aGJXVWlPaUoyWVhWc2RDMHdJaXdpZFdsa0lqb2laV1k1TnpjeU9XSXRNREU1T1MwME5EbGlMV0psTnpJdFptSXpNekUxTURaallqQXlJbjBzSW5ObGNuWnBZMlZoWTJOdmRXNTBJanA3SW01aGJXVWlPaUoyWVhWc2RDSXNJblZwWkNJNkltUTVaREl6TWpNeUxUVmtZMll0TkdFeU15MDRORGcyTFdRMlpqRmtZV0V3TWpSaU9DSjlMQ0ozWVhKdVlXWjBaWElpT2pFMk5UYzNNall3TkROOUxDSnVZbVlpT2pFMk5UYzNNakkwTXpZc0luTjFZaUk2SW5ONWMzUmxiVHB6WlhKMmFXTmxZV05qYjNWdWREcGtaV1poZFd4ME9uWmhkV3gwSW4wLk02MnJEcXpJRzZPMFI1ZC1MQTAxcHVPdnNROVhtbzhhZWhVSmFuejl3MUdad0ljRmNkLXJpLVFKVEIzSnhRNWhHSGplWGtBd3VCVUIwTkZHWFZYS1l6cVF6SWRrTEpiZEF0WklYTUdGeXdvdThrOG1GazNfTm84UWdDZUgyeUpyUTUwVGZ4ZFhQbGxULTFLb1hjUklOU0VvR2d4QW51NUJpdzNYM09YZXpLSWVDTlRIQzRXc1Awa1ZoUjNBU2xPaDlUZi1BOU5DRjRTaGdGSWQ2NE1nWkxwX19iX0k0RHllTzM2dmVPcUVyY3BSOENTTTVvNXNGaU83elY1WDZiWEZnOFl0dWo0RGZONk4tUUZJZi1qQUxBY3o3UEpQb1hRWUdJNUM1cFNNMGlzMktVWlpVOGdxYU5sWlNObnhRVEFZSG5ZU3ZWWE0yMzVfV0NwQS1CU2Zidw==
 ```
 
-Create vault namespace
+Create jwt-secret namespace
 
 ```shell
-kubectl create namespace vault
+kubectl create namespace kubernetes-jwt
 ```
 
 Now apply both files as follows
 
 ```shell
+kubectl apply -f jwt.yaml
 kubectl apply -f cluster-secret-store.yaml
-kubectl apply -f vault-token-secret.yaml
 ```
 
 Create a file `external-pullsecret-cluster.yaml` with following content.
